@@ -1,0 +1,48 @@
+{{ if  .Values.version.newK8s }}
+apiVersion: batch/v1beta1
+{{ else }}
+apiVersion: batch/v2alpha1
+{{end}}
+kind: CronJob
+metadata:
+  name: curator
+spec:
+  schedule: "{{.Values.curator.schedule}}"
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 80
+      template:
+        spec:
+          serviceAccountName: logging # FIXME: should create in current chart with meaningful name
+          containers:
+          - name: curator
+            image:  {{.Values.curator.repository}}/{{.Values.curator.image}}:{{.Values.curator.tag}}
+            command:
+            - curator
+            - --config
+            - /config/config.yml
+            - /config/action_file.yml
+            volumeMounts:
+              - name: config-volume
+                mountPath: /config
+            env:
+            - name: ELASTICSEARCH_HOST
+              value: "{{.Values.elasticsearch.host}}"
+            - name: ELASTICSEARCH_PORT
+              value: "{{.Values.elasticsearch.port}}"
+            - name: MAX_AGE
+              value: "{{.Values.curator.max_age}}"
+            - name: MAX_SIZE
+              value: "{{.Values.curator.max_size}}"
+            - name: LOG_RETENTION_COUNT
+              value: "{{.Values.curator.retentionCount}}"
+            - name: LOG_RETENTION_UNIT
+              value: "{{.Values.curator.retentionUnit}}"
+            - name: MAX_OPEN_INDEX_COUNT
+              value: "{{.Values.curator.maxOpenIndexCount}}"
+              
+          volumes:
+            - name: config-volume
+              configMap:
+                name: curator-config
+          restartPolicy: Never

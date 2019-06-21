@@ -1,0 +1,40 @@
+# Default values for elastic-curator.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+
+curator:
+  repository: <repository>:5000
+  image: %build_type%/elastic_curator
+  tag : %build_tag%
+  max_age: 1d
+  max_size: 25gb
+  schedule: "0 * * * *"
+  retentionUnit: days
+  retentionCount: 30  #keep this double of the max_age of index so that it preserves on rotated index. 
+  maxOpenIndexCount: 2
+elasticsearch:
+  host: elasticsearch   # this value should be <hostname.namespace>. no need to specify namesapce if it is default.
+  port: 9200            #port
+version:
+  newK8s: true   # set this to true, if you are using 1.10 version of kubernetes.
+
+
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

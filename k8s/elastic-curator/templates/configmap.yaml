@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: curator-config
+data:
+  action_file.yml: |-
+    ---
+    # Remember, leave a key empty if there is no value.  None will be a string,
+    # not a Python "NoneType"
+    #
+    # Also remember that all examples have 'disable_action' set to True.  If you
+    # want to use this action as a template, be sure to set this to False after
+    # copying it.
+    actions:
+      1:
+        action: rollover
+        description: "Rollover the index associated with alias esmaster."
+        options:
+          disable_action: False
+          continue_if_exception: True
+          ignore_empty_list: True
+          name: esmaster
+          new_index: "<esmaster-{now{yyyy-MM-dd't'HH.mm.ss}}>"
+          conditions:
+            max_age: ${MAX_AGE}
+            max_size: ${MAX_SIZE}
+          extra_settings:
+            index.number_of_shards: 3
+            index.number_of_replicas: 1
+            index.refresh_interval: 20s
+      2:
+        action: close
+        description: "Close the index associated with alias esmaster."
+        options:
+          delete_aliases: False
+          disable_action: False
+          continue_if_exception: True
+          ignore_empty_list: True
+        filters:
+        - filtertype: pattern
+          kind: prefix
+          value: esmaster-
+        - filtertype: count
+          count: ${MAX_OPEN_INDEX_COUNT}
+          use_age: True
+          source: creation_date
+      3:
+        action: delete_indices
+        description: "Delete the index associated with alias catalog"
+        options:
+          disable_action: False
+          continue_if_exception: True
+          ignore_empty_list: True
+        filters:
+        - filtertype: pattern
+          kind: prefix
+          value: catalog-
+        - filtertype: age
+          source: creation_date
+          direction: older
+          unit: ${LOG_RETENTION_UNIT}
+          unit_count: ${LOG_RETENTION_COUNT}
+
+  config.yml: |-
+    ---
+    # Remember, leave a key empty if there is no value.  None will be a string,
+    # not a Python "NoneType"
+    client:
+      hosts: "{{.Values.elasticsearch.host}}.{{.Release.Namespace}}"
+      port: "{{.Values.elasticsearch.port}}"
+      url_prefix:
+      use_ssl: False
+      certificate:
+      client_cert:
+      client_key:
+      ssl_no_validate: False
+      http_auth:
+      timeout: 30
+      master_only: False
+
+    logging:
+      loglevel: INFO
+      logfile:
+      logformat: default
+      blacklist: ['elasticsearch', 'urllib3']

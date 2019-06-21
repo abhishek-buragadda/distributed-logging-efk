@@ -1,0 +1,378 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: es-client
+  namespace: {{ .Release.Namespace}}
+  labels:
+    component: elasticsearch
+    role: client
+spec:
+  replicas: {{.Values.elasticsearch.clientReplicas}}
+  template:
+    metadata:
+      labels:
+        component: elasticsearch
+        role: client
+    spec:
+      serviceAccountName: logging
+      initContainers:
+      - name: init-sysctl
+        image: docker.io/busybox:1.27.2
+        command:
+        - sysctl
+        - -w
+        - vm.max_map_count=262144
+        securityContext:
+          privileged: true
+      containers:
+      - name: es-client
+        image: {{.Values.elasticsearch.repository}}/{{.Values.elasticsearch.image}}:{{.Values.elasticsearch.tag}}
+        imagePullPolicy: Always
+        securityContext:
+         capabilities:
+           add:
+           - IPC_LOCK
+           - SYS_RESOURCE
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: CLUSTER_NAME
+          value: "{{.Values.elasticsearch.clusterName}}"
+        - name: NODE_MASTER
+          value: "{{.Values.elasticsearch.client.nodeMaster}}"
+        - name: NODE_INGEST
+          value: "{{.Values.elasticsearch.client.nodeIngest}}"
+        - name: NODE_DATA
+          value: "{{.Values.elasticsearch.client.nodeData}}"
+        - name: HTTP_ENABLE
+          value: "{{.Values.elasticsearch.client.httpEnable}}"
+        - name: ES_JAVA_OPTS
+          value: {{.Values.elasticsearch.client.JavaOpts}}
+        - name: NETWORK_HOST
+          value: {{.Values.elasticsearch.networkHost}}
+        - name: NUMBER_OF_MASTERS
+          value: "{{.Values.elasticsearch.client.noOfMasters}}"
+        - name: MAX_LOCAL_STORAGE_NODES
+          value: "{{.Values.elasticsearch.dataReplicas}}"
+        - name: PROCESSORS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        resources:
+          limits:
+            cpu: {{.Values.elasticsearch.resources.clientCPU}}
+            memory: {{.Values.elasticsearch.resources.clientMemory}}
+          requests:
+            cpu: {{.Values.elasticsearch.resources.clientCPU}}
+            memory: {{.Values.elasticsearch.resources.clientMemory}}
+        ports:
+        - containerPort: 9200
+          name: http
+        - containerPort: 9300
+          name: transport
+        livenessProbe:
+          tcpSocket:
+            port: transport
+          initialDelaySeconds: 40
+          periodSeconds: 10
+        volumeMounts:
+        - name: storage
+          mountPath: "/data"
+      volumes:
+        - name: storage
+          emptyDir: {}
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: es-data
+  namespace: {{ .Release.Namespace}}
+  labels:
+    component: elasticsearch
+    role: data
+spec:
+  replicas: {{.Values.elasticsearch.dataReplicas}}
+  template:
+    metadata:
+      labels:
+        component: elasticsearch
+        role: data
+    spec:
+      serviceAccountName: logging
+      initContainers:
+      - name: init-sysctl
+        image: docker.io/busybox:1.27.2
+        command:
+        - sysctl
+        - -w
+        - vm.max_map_count=262144
+        securityContext:
+          privileged: true
+      containers:
+      - name: es-data
+        image: {{.Values.elasticsearch.repository}}/{{.Values.elasticsearch.image}}:{{.Values.elasticsearch.tag}}
+        imagePullPolicy: Always
+        securityContext:
+         capabilities:
+           add:
+           - IPC_LOCK
+           - SYS_RESOURCE
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: CLUSTER_NAME
+          value: "{{.Values.elasticsearch.clusterName}}"
+        - name: NODE_MASTER
+          value: "{{.Values.elasticsearch.data.nodeMaster}}"
+        - name: NODE_INGEST
+          value: "{{.Values.elasticsearch.data.nodeIngest}}"
+        - name: NODE_DATA
+          value: "{{.Values.elasticsearch.data.nodeData}}"
+        - name: HTTP_ENABLE
+          value: "{{.Values.elasticsearch.data.httpEnable}}"
+        - name: ES_JAVA_OPTS
+          value: {{.Values.elasticsearch.data.JavaOpts}}
+        - name: NETWORK_HOST
+          value: {{.Values.elasticsearch.networkHost}}
+        - name: NUMBER_OF_MASTERS
+          value: "{{.Values.elasticsearch.data.noOfMasters}}"
+        - name: MAX_LOCAL_STORAGE_NODES
+          value: "{{.Values.elasticsearch.dataReplicas}}"
+        - name: PROCESSORS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        resources:
+          limits:
+            cpu: {{.Values.elasticsearch.resources.dataCPU}}
+            memory: {{.Values.elasticsearch.resources.dataMemory}}
+          requests:
+            cpu: {{.Values.elasticsearch.resources.dataCPU}}
+            memory: {{.Values.elasticsearch.resources.dataMemory}}
+        ports:
+        - containerPort: 9300
+          name: transport
+        livenessProbe:
+          tcpSocket:
+            port: transport
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        volumeMounts:
+        - name: storage
+          mountPath: "/data"
+      volumes:
+          - name: storage
+            persistentVolumeClaim:
+              claimName: {{.Values.elasticsearch.volumes.pvc}}
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: es-master
+  namespace : {{ .Release.Namespace}}
+  labels:
+    component: elasticsearch
+    role: master
+spec:
+  replicas: {{.Values.elasticsearch.masterReplicas}}
+  template:
+    metadata:
+      labels:
+        component: elasticsearch
+        role: master
+    spec:
+      serviceAccountName: logging
+      initContainers:
+      - name: init-sysctl
+        image: busybox:1.27.2
+        command:
+        - sysctl
+        - -w
+        - vm.max_map_count=262144
+        securityContext:
+          privileged: true
+      containers:
+      - name: es-master
+        image: {{.Values.elasticsearch.repository}}/{{.Values.elasticsearch.image}}:{{.Values.elasticsearch.tag}}
+        securityContext:
+         capabilities:
+           add:
+           - IPC_LOCK
+           - SYS_RESOURCE
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: CLUSTER_NAME
+          value: "{{.Values.elasticsearch.clusterName}}"
+        - name: NODE_MASTER
+          value: "{{.Values.elasticsearch.master.nodeMaster}}"
+        - name: NODE_INGEST
+          value: "{{.Values.elasticsearch.master.nodeIngest}}"
+        - name: NODE_DATA
+          value: "{{.Values.elasticsearch.master.nodeData}}"
+        - name: HTTP_ENABLE
+          value: "{{.Values.elasticsearch.master.httpEnable}}"
+        - name: ES_JAVA_OPTS
+          value: {{.Values.elasticsearch.master.JavaOpts}}
+        - name: NETWORK_HOST
+          value: {{.Values.elasticsearch.networkHost}}
+        - name: NUMBER_OF_MASTERS
+          value: "{{.Values.elasticsearch.master.noOfMasters}}"
+        - name: MAX_LOCAL_STORAGE_NODES
+          value: "{{.Values.elasticsearch.dataReplicas}}"
+        - name: PROCESSORS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        resources:
+          limits:
+            cpu: {{.Values.elasticsearch.resources.masterCPU}}
+            memory: {{.Values.elasticsearch.resources.masterMemory}}
+          requests:
+            cpu: {{.Values.elasticsearch.resources.masterCPU}}
+            memory: {{.Values.elasticsearch.resources.masterMemory}}
+        ports:
+        - containerPort: 9300
+          name: transport
+        volumeMounts:
+        - name: storage
+          mountPath: "/data"
+      volumes:
+          - name: storage
+            emptyDir: {}
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: fluentd-aggregator
+  namespace : {{ .Release.Namespace}}
+  labels:
+    k8s-app: fluentd-default
+    version: v1
+spec:
+  replicas: {{.Values.fluentd.replicas}}
+  selector:
+    matchLabels:
+      k8s-app: fluentd-logging
+  template:
+    metadata:
+      labels:
+        k8s-app: fluentd-logging
+        version: v1
+        kubernetes.io/cluster-service: "true"
+    spec:
+      serviceAccountName: logging
+      initContainers:
+      - name: elasticreadiness
+        image: {{.Values.readinesscheck.repository}}/{{.Values.readinesscheck.image}}:{{.Values.readinesscheck.tag}}
+        env:
+        - name: ELASTICSEARCH_HOST
+          value: "{{.Values.elasticsearch.host}}.{{.Release.Namespace}}"
+        - name: ELASTICSEARCH_PORT
+          value: "{{.Values.elasticsearch.port}}"
+      - name: check-indices
+        image: {{.Values.checkindices.repository}}/{{.Values.checkindices.image}}:{{.Values.checkindices.tag}}
+        env:
+        - name: FLUENT_ELASTICSEARCH_HOST
+          value: "{{.Values.elasticsearch.host}}.{{.Release.Namespace}}"
+        - name: FLUENT_ELASTICSEARCH_PORT
+          value: "{{.Values.elasticsearch.port}}"
+      containers:
+      - name: fluentd
+        image: {{.Values.fluentd.repository}}/{{.Values.fluentd.aggr.image}}:{{.Values.fluentd.aggr.tag}}
+        securityContext:
+          privileged: true
+        env:
+        - name: FLUENT_ELASTICSEARCH_HOST
+          value: "{{.Values.elasticsearch.host}}.{{.Release.Namespace}}"
+        - name: FLUENT_ELASTICSEARCH_PORT
+          value: "{{.Values.elasticsearch.port}}"
+        - name: PROCESSORS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        resources:
+          limits:
+            cpu: {{.Values.fluentd.resources.cpu}}
+            memory: {{.Values.fluentd.resources.memory}}
+          requests:
+            cpu: {{.Values.fluentd.resources.cpu}}
+            memory: {{.Values.fluentd.resources.memory}}
+        ports:
+        - containerPort: 24224
+        volumeMounts:
+        - name: fluentd-aggregator-config
+          mountPath: /fluentd/etc/
+      volumes:
+      - name: fluentd-aggregator-config
+        configMap:
+          name: fluentd-aggregator-config
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: kibana-logging
+  namespace: {{ .Release.Namespace}}
+  labels:
+    k8s-app: kibana-logging
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  replicas: {{.Values.kibana.replicas}}
+  selector:
+    matchLabels:
+      k8s-app: kibana-logging
+  template:
+    metadata:
+      labels:
+        k8s-app: kibana-logging
+      annotations:
+        seccomp.security.alpha.kubernetes.io/pod: 'docker/default'
+    spec:
+      serviceAccountName: logging
+      containers:
+      - name: kibana-logging
+        image: docker.elastic.co/kibana/kibana-oss:6.6.1
+        resources:
+          # need more cpu upon initialization, therefore burstable class
+          limits:
+            cpu: {{.Values.kibana.resources.limits.cpu}}
+          requests:
+            cpu: {{.Values.kibana.resources.requests.cpu}}
+        env:
+          - name: ELASTICSEARCH_URL
+            {{- if eq .Release.Namespace "default"}}
+            value: http://{{.Values.elasticsearch.host}}:{{.Values.elasticsearch.port}}/
+            {{- else }}
+            value: http://{{.Values.elasticsearch.host}}.{{.Release.Namespace}}:{{.Values.elasticsearch.port}}/
+            {{- end}}
+          #- name: SERVER_BASEPATH
+          #  value: /api/v1/namespaces/kube-system/services/kibana-logging/proxy
+          #- name: XPACK_MONITORING_ENABLED
+          # value: "false"
+          # - name: XPACK_SECURITY_ENABLED
+          #  value: "false"
+        ports:
+        - containerPort: 5601
+          name: ui
+          protocol: TCP
+---

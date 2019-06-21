@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name:  "{{.Release.Name}}-{{.Release.Revision}}-curator-init"
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: elasticreadiness
+        image: {{.Values.readinesscheck.repository}}/{{.Values.readinesscheck.image}}:{{.Values.readinesscheck.tag}}
+        env:
+        - name: ELASTICSEARCH_HOST
+          value: "{{.Values.elasticsearch.host}}.{{.Release.Namespace}}"
+        - name: ELASTICSEARCH_PORT
+          value: "{{.Values.elasticsearch.port}}"
+      containers:
+      - name: curator-init
+        image: {{.Values.curator.repository}}/{{.Values.curator.image}}:{{.Values.curator.tag}}
+        command:
+        - curator
+        - --config
+        - /config/config.yml
+        - /config/actions.yml
+        volumeMounts:
+        - name: init-config-volume
+          mountPath: /config
+        env:
+        - name: ELASTICSEARCH_HOST
+          value: "{{.Values.elasticsearch.host}}.{{.Release.Namespace}}"
+        - name: ELASTICSEARCH_PORT
+          value: "{{.Values.elasticsearch.port}}"
+      volumes:
+        - name: init-config-volume
+          configMap:
+            name: curator-init-config
+      restartPolicy: Never

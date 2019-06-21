@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{.Values.elasticsearch.volumes.pv}}
+  namespace: {{.Release.Namespace}}
+spec:
+  capacity:
+    storage: {{.Values.elasticsearch.volumes.capacity}}
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{.Values.elasticsearch.volumes.pv}}
+  nfs:
+    path: {{.Values.elasticsearch.nfs.mountPath}}
+    server: {{.Values.elasticsearch.nfs.server}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{.Values.elasticsearch.volumes.pvc}}
+  namespace: {{.Release.Namespace}}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{.Values.elasticsearch.volumes.capacity}}
+  storageClassName: {{.Values.elasticsearch.volumes.pv}}
