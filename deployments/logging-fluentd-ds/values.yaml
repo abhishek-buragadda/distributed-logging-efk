@@ -7,8 +7,8 @@ elasticsearch:
   host: elasticsearch
   port: 9200
   repository: <repo>:5000
-  image: %build_type%/elasticsearch
-  tag : %build_tag%
+  image: <elastic-search-image-name>
+  tag : <tag-name>
   clusterName: ebs_elastic
   client:
     nodeMaster: false
@@ -37,12 +37,12 @@ elasticsearch:
   masterReplicas : 3
   clientReplicas : 2
   volumes:
-    pvc: ontap-nfs-elastic-claim
-    pv : ontap-nfs-elastic
-    capacity: 50Gi
+    pvc: nfs-elastic-claim
+    pv : nfs-elastic
+    capacity: 50Gi   #capacity of the volume
 
   nfs:
-    mountPath: /ab_elastic
+    mountPath: /elastic
     server: 10.193.78.90
 
   resources:
@@ -55,14 +55,14 @@ elasticsearch:
 
 fluentd:
   host: fluentd-aggregator
-  repository : cago-docker.rtp.openeng.netapp.com:5000
+  repository : <repository-addr (to fetch the fluentd image)>
   replicas: 1 
   daemonset:
-    image: %build_type%/fluentd_ds
-    tag: %build_tag%
+    image: <fluentd  daemonset image-name>
+    tag: <fluentd image tag>
   aggr:
-    image: %build_type%/fluentd_aggr
-    tag: %build_tag%
+    image: <fluentd aggregator image name>
+    tag: <fluentd aggr tag name>
   port: 24224
   resources:
     cpu: 1
@@ -77,19 +77,19 @@ kibana:
       cpu: 100m
 
 curator:
-  repository: cago-docker.rtp.openeng.netapp.com:5000
-  image: %build_type%/elastic_curator
-  tag: %build_tag%
+  repository: <repository-addr>
+  image: <image-name>
+  tag: <tag-name>
 
 readinesscheck:
-  repository: cago-docker.rtp.openeng.netapp.com:5000
-  image: %build_type%/elastic_readinesscheck
-  tag: %build_tag%
+  repository: <repository-addr>
+  image: <image-name>
+  tag: <tag-name>
 
 checkindices:
-  repository: cago-docker.rtp.openeng.netapp.com:5000
-  image: %build_type%/elastic_checkindices
-  tag: %build_tag%
+  repository: <repo-name>
+  image: <image-name>
+  tag: <tag-name>
 
   tls: []
   #  - secretName: chart-example-tls

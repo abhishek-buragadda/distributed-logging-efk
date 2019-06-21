@@ -2,34 +2,33 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-
 elasticsearch:
   host: elasticsearch
   port: 9200
-  repository: cago-docker.rtp.openeng.netapp.com:5000
-  image: %build_type%/elasticsearch
-  tag : %build_tag%
+  repository: <repo>:5000
+  image: <elastic-search-image-name>
+  tag : <tag-name>
   clusterName: ebs_elastic
   client:
     nodeMaster: false
     nodeIngest: true
     nodeData:  false
     httpEnable: true
-    JavaOpts: -Xms4096m -Xmx4096m
+    JavaOpts: -Xms1024m -Xmx1024m
     noOfMasters: 2
   data:
     nodeMaster: false
     nodeIngest: false
     nodeData:  true
     httpEnable: false
-    JavaOpts: -Xms6144m -Xmx6144m
+    JavaOpts: -Xms512m -Xmx512m
     noOfMasters: 2
   master:
     nodeMaster: true
     nodeIngest: false
     nodeData:  false
     httpEnable: false
-    JavaOpts: -Xms768m -Xmx768m
+    JavaOpts: -Xms512m -Xmx512m
     noOfMasters: 2
 
   networkHost: 0.0.0.0
@@ -49,18 +48,18 @@ elasticsearch:
 
 fluentd:
   host: fluentd-aggregator
-  repository : cago-docker.rtp.openeng.netapp.com:5000
-  replicas: 1 
+  repository : <repository-addr (to fetch the fluentd image)>
+  replicas: 1
   daemonset:
-    image: %build_type%/fluentd_ds
-    tag: %build_tag%
+    image: <fluentd  daemonset image-name>
+    tag: <fluentd image tag>
   aggr:
-    image: %build_type%/fluentd_aggr
-    tag: %build_tag%
+    image: <fluentd aggregator image name>
+    tag: <fluentd aggr tag name>
   port: 24224
   resources:
-      cpu: 2
-      memory: 6Gi
+    cpu: 1
+    memory: 2Gi
   volumes:
     capacity: 100Gi
 
@@ -73,19 +72,20 @@ kibana:
       cpu: 100m
 
 curator:
-  repository: cago-docker.rtp.openeng.netapp.com:5000
-  image: %build_type%/elastic_curator
-  tag: %build_tag%
+  repository: <repository-addr>
+  image: <image-name>
+  tag: <tag-name>
 
 readinesscheck:
-  repository: cago-docker.rtp.openeng.netapp.com:5000
-  image: %build_type%/elastic_readinesscheck
-  tag: %build_tag%
+  repository: <repository-addr>
+  image: <image-name>
+  tag: <tag-name>
 
 checkindices:
-  repository: cago-docker.rtp.openeng.netapp.com:5000
-  image: %build_type%/elastic_checkindices
-  tag: %build_tag%
+  repository: <repo-name>
+  image: <image-name>
+  tag: <tag-name>
+
 
 nodeAffinity:
   nodeAffinityEnabled: true
