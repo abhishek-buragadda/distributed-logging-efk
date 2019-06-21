@@ -87,10 +87,8 @@ Index pattern for the indices.
  
 For example below:
 
-    api -- api-2018-12-10t10.07.19
-    billing – billing-2018-12-10t10.07.19
-    lrse -- lrse-2018-12-10t10.07.19
-    lrsemetrics -- lrsemetrics-2018-09-000001
+    es-master -- es-master-2018-12-10t10.07.19
+    
 
 •	**max_age, max_size**: The user can configure max-age or max_size for a particular index, after this time the index gets rollover by curator. Please note that the index rollover will happens with whichever condition (either max_age or max_size) occurs first.
 
@@ -104,14 +102,8 @@ For example below:
 
 •	What happens when an index is rotated  →   Newer indices are created and the alias-es now point to the newer index.
 
-    lrsemetrics -- lrsemetrics-2018-09-000002
-    api -- 2018-09-000002
-    billing -- 2018-09-000002
-    lrse -- lrse-2018-09-000002
-    sched -- sched-2018-09-000002
-    rabbitmq. -- rabbitmq-2018-09-000002
-    mariadb -- mariadb-2018-09-000002
-    lrsemetrics -- lrsemetrics-2018-09-000002
+    esmaster -- esmater-{time}
+ 
 
 # Installation: 
 Installations Requirements:
