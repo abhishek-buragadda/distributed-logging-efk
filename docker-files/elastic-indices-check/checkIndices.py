@@ -8,7 +8,7 @@ def checkIndices():
     elasticHost = os.getenv("FLUENT_ELASTICSEARCH_HOST")
     elasticPort = os.getenv("FLUENT_ELASTICSEARCH_PORT")
     elasticUrl = "http://{0}:{1}/".format(elasticHost, elasticPort)
-    indices = ["lrse", "api", "sched", "billing", "lrsemetrics", "esmaster"]
+    indices = ["esmaster","required-index-name"]  #give all required index names in this array.
     isElasticReady = False
     while isElasticReady != True:
         indexCheck = True
